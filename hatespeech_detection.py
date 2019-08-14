@@ -1,22 +1,16 @@
-import nltk
+import openpyxl as openpyxl
+import numpy as np
 import openpyxl as openpyxl
 import pandas as pd
-import numpy as np
-import math
-
-from sklearn.utils import shuffle
 from gensim.models import Word2Vec
-from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.naive_bayes import GaussianNB
+from nltk.tokenize import word_tokenize
+from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn import metrics
-from sklearn.metrics import precision_recall_curve
-from sklearn.metrics import average_precision_score
-from collections import defaultdict
+from sklearn.utils import shuffle
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def makeFeatureVec(words, model, num_features):
     # Function to average all of the word vectors in a given paragraph
@@ -75,7 +69,6 @@ dataset = pd.read_csv('processed_dataset.csv')
 out = openpyxl.load_workbook('outcome.xlsx', read_only=False)
 sh = out.get_sheet_by_name('Sheet1')
 
-# did not do randomize to the data !!!
 # did not used cross validation - consider this in future extraction of the project
 
 clean_tweets = []
@@ -136,31 +129,38 @@ num_workers = 4  # Number of threads to run in parallel
 context = 10  # Context window size
 downsampling = 1e-3  # Downsample setting for frequent words
 
+# ***Word2Vec***
 # Initialize and train the model (this will take some time)
-print("Training Word2Vec model...")
-model = Word2Vec(clean_tweets, workers=num_workers,
-                 size=num_features, min_count=min_word_count,
-                 window=context, sample=downsampling, seed=1)
+# print("Training Word2Vec model...")
+# model = Word2Vec(clean_tweets, workers=num_workers,
+#                  size=num_features, min_count=min_word_count,
+#                  window=context, sample=downsampling, seed=1)
 
-tweet_features = getAvgFeatureVecs(clean_tweets, model, num_features)
+# tweet_features = getAvgFeatureVecs(clean_tweets, model, num_features)
+
+# ***TfidfVectorizer***
+vectorizer = TfidfVectorizer(ngram_range=(2, 3), max_features=1500)
+tweet_features = vectorizer.fit_transform(clean_tweets)
+
+np.asarray(tweet_features)
+
+# print("PRINTING RESULT OF VECTORIZED TWEETS")
+# print(tweet_features[:10])
+# print(np.any(np.isnan(tweet_features)))
+# print(np.all(np.isfinite(tweet_features)))
+
+tweet_features = np.nan_to_num(tweet_features)
+
+# print("PRINTING AGAIN IF THERE ARE NANS")
+# print(np.any(np.isnan(tweet_features)))
+# print(np.all(np.isfinite(tweet_features)))
+
 
 # Assigning classifiers
 forest = RandomForestClassifier(n_estimators=100)
 regression = LogisticRegression(verbose=0)
 extraTrees = ExtraTreesClassifier(n_estimators=100, n_jobs=-1, verbose=0, class_weight='balanced', bootstrap=True)
 # gnb = GaussianNB()
-
-np.asarray(tweet_features)
-print("PRINTING RESULT OF VECTORIZED TWEETS")
-print(tweet_features[:10])
-print(np.any(np.isnan(tweet_features)))
-print(np.all(np.isfinite(tweet_features)))
-
-tweet_features = np.nan_to_num(tweet_features)
-
-print("PRINTING AGAIN IF THERE ARE NANS")
-print(np.any(np.isnan(tweet_features)))
-print(np.all(np.isfinite(tweet_features)))
 
 # Training
 forest = forest.fit(tweet_features[:26820], data['class'][:26820])
