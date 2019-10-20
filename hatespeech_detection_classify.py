@@ -18,17 +18,6 @@ clean_tweets = clean_data()
 
 print(clean_tweets[:10])
 
-# Vector transformation
-
-# ***Bag-of-words***
-# vectorizer = CountVectorizer(analyzer="word",
-#                              tokenizer=None,
-#                              preprocessor=None,
-#                              stop_words=None,
-#                              max_features=5000)
-#
-# tweet_features = vectorizer.fit_transform(clean_tweets)
-# np.asarray(tweet_features)
 
 num_features = 150  # Word vector dimensionality
 min_word_count = 40  # Minimum word count
