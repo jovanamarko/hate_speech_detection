@@ -7,7 +7,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
 from clean_tweets import clean_data, get_data
-from word2vec_features import getAvgFeatureVecs
+from word2vec_features import getAvgFeatureVecs, get_features
+from ngrams import get_n_grams, get_features_tfidf
 
 out = openpyxl.load_workbook('outcome.xlsx', read_only=False)
 sh = out.get_sheet_by_name('Sheet1')
@@ -35,32 +36,17 @@ num_workers = 4  # Number of threads to run in parallel
 context = 10  # Context window size
 downsampling = 1e-3  # Downsample setting for frequent words
 
-# ***Word2Vec***
-# Initialize and train the model (this will take some time)
-print("Training Word2Vec model...")
-model = Word2Vec(clean_tweets, workers=num_workers,
-                 size=num_features, min_count=min_word_count,
-                 window=context, sample=downsampling, seed=1)
-
-tweet_features = getAvgFeatureVecs(clean_tweets, model, num_features)
+# word2vec features
+tweet_features = get_features()
 # KeyedVectors.load_word2vec_format()
 
 # ***TfidfVectorizer***
-vectorizer = TfidfVectorizer(ngram_range=(2, 3), max_features=1500)
-tweet_features_tfidf = vectorizer.fit_transform(clean_tweets)
 
+tweet_features_tfidf = get_features_tfidf()
 np.asarray(tweet_features_tfidf)
-
-# print("PRINTING RESULT OF VECTORIZED TWEETS")
-# print(tweet_features[:10])
-# print(np.any(np.isnan(tweet_features)))
-# print(np.all(np.isfinite(tweet_features)))
-
 tweet_features_tfidf = np.nan_to_num(tweet_features_tfidf)
 
-# print("PRINTING AGAIN IF THERE ARE NANS")
-# print(np.any(np.isnan(tweet_features)))
-# print(np.all(np.isfinite(tweet_features)))
+ngrams = get_n_grams()
 
 
 # Assigning classifiers
